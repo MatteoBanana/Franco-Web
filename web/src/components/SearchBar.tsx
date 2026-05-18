@@ -22,7 +22,7 @@ export default function SearchBar({ initialQuery = '' }: { initialQuery?: string
       (pos) => {
         // La geolocalizzazione lato client reindirizza alla pagina cerca
         // con le coordinate — la pagina /cerca gestisce la mappa
-        router.push(`/cerca?lat=${pos.coords.latitude}&lng=${pos.coords.longitude}&radius=10`)
+        router.push(`/?lat=${pos.coords.latitude}&lng=${pos.coords.longitude}&radius=10`)
         setLocating(false)
       },
       () => setLocating(false)
