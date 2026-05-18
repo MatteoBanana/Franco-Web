@@ -35,7 +35,8 @@ export default async function HomePage({
 }: {
   searchParams: SearchParams
 }) {
-  const { data: listings, meta } = await fetchListings(searchParams)
+  const params = await searchParams
+  const { data: listings, meta } = await fetchListings(params)
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
@@ -63,7 +64,7 @@ export default async function HomePage({
             </p>
 
             {/* SearchBar è client component per interattività */}
-            <SearchBar initialQuery={searchParams.q || ''} />
+            <SearchBar initialQuery={params.q || ''} />
 
             <div className="mt-5">
               <a
@@ -92,7 +93,7 @@ export default async function HomePage({
 
         {/* Filtri — client component per navigazione URL */}
         <div className="mb-6">
-          <CategoryFilter active={searchParams.category || 'tutti'} />
+          <CategoryFilter active={params.category || 'tutti'} />
         </div>
 
         {listings.length === 0 ? (
