@@ -11,12 +11,20 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://matteor80.sg-host.co
 interface SearchParams {
   q?: string
   category?: string
+  lat?: string
+  lng?: string
+  radius?: string
 }
 
 async function fetchListings(params: SearchParams = {}): Promise<{ data: Listing[]; meta: { total: number } }> {
   const url = new URL(`${API_URL}/listings`)
   if (params.q) url.searchParams.set('q', params.q)
   if (params.category && params.category !== 'tutti') url.searchParams.set('category', params.category)
+  if (params.lat && params.lng) {
+    url.searchParams.set('lat', params.lat)
+    url.searchParams.set('lng', params.lng)
+    url.searchParams.set('radius', params.radius || '10')
+  }
   url.searchParams.set('per_page', '12')
 
   try {
@@ -33,7 +41,7 @@ async function fetchListings(params: SearchParams = {}): Promise<{ data: Listing
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: SearchParams
+  searchParams: Promise<SearchParams>
 }) {
   const params = await searchParams
   const { data: listings, meta } = await fetchListings(params)
@@ -84,7 +92,7 @@ export default async function HomePage({
         <div className="flex items-center gap-2 mb-4">
           <MapPin size={16} style={{ color: 'var(--terracotta)' }} />
           <h2 className="font-semibold text-base" style={{ color: 'var(--ink)' }}>
-            Oggetti disponibili
+            {params.lat && params.lng ? 'Oggetti vicino a te' : 'Oggetti disponibili'}
           </h2>
           <span className="text-sm ml-auto" style={{ color: 'var(--muted)' }}>
             {meta.total} {meta.total === 1 ? 'oggetto' : 'oggetti'}
