@@ -32,7 +32,7 @@ export interface Owner {
   id: number
   name: string
   avatar_url: string | null
-  rating_avg: number
+  rating_avg: number | null
   is_verified: boolean
 }
 
@@ -48,8 +48,8 @@ export interface Listing {
   status: string
   cover_image: string | null
   distance_km: number | null
-  category: Category
-  owner: Owner
+  category: Category | null
+  owner: Owner | null
   description?: string
   address?: string
   images?: { id: number; url: string }[]
@@ -63,6 +63,11 @@ export interface ListingsResponse {
     last_page: number
     per_page: number
   }
+}
+
+export interface ListingDetailResponse {
+  listing: Listing
+  unavailable_dates: { from: string; to: string }[]
 }
 
 export interface ListingParams {
@@ -83,7 +88,7 @@ export interface ListingParams {
 export const getListings = (params: ListingParams = {}): Promise<ListingsResponse> =>
   api.get('/listings', { params }).then(r => r.data)
 
-export const getListing = (id: number) =>
+export const getListing = (id: number): Promise<ListingDetailResponse> =>
   api.get(`/listings/${id}`).then(r => r.data)
 
 export const getCategories = () =>
