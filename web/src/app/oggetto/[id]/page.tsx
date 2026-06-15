@@ -182,6 +182,7 @@ export default async function OggettoDetailPage({
           <aside className="lg:col-span-1">
             <div id="prenota" className="lg:sticky lg:top-6">
               <FormPrenotazione
+                listingId={listing.id}
                 pricePerDay={pricePerDay}
                 deposit={deposit}
                 unavailableDates={unavailableDates}
