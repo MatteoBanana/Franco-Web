@@ -104,6 +104,57 @@ export interface ListingDetailResponse {
   unavailable_dates: { from: string; to: string }[]
 }
 
+// Stati prenotazione — specchiano l'enum della tabella bookings lato backend.
+// La macchina a stati permette pending → confirmed | rejected (azioni del proprietario).
+export type BookingStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'active'
+  | 'completed'
+  | 'cancelled'
+  | 'rejected'
+
+// Forma DEDOTTA dal pattern di listingResource (category/owner annidati) e dalla
+// migration bookings. Da verificare contro il JSON reale appena esiste una
+// prenotazione di prova nel DB: in particolare la presenza degli oggetti annidati
+// listing e renter, e i nomi esatti dei campi.
+// I campi monetari arrivano come string (decimal serializzato da Laravel): Number() in UI.
+export interface BookingListingRef {
+  id: number
+  title: string
+  cover_image: string | null
+}
+
+export interface BookingRenterRef {
+  id: number
+  name: string
+  avatar_url: string | null
+}
+
+export interface Booking {
+  id: number
+  status: BookingStatus
+  date_from: string
+  date_to: string
+  days: number
+  price_per_day: string
+  subtotal: string
+  deposit: string
+  total: string
+  renter_notes: string | null
+  owner_notes: string | null
+  created_at?: string
+  listing: BookingListingRef
+  renter: BookingRenterRef
+}
+
+export interface BookingsResponse {
+  data: Booking[]
+  meta: {
+    total: number
+  }
+}
+
 export interface ListingParams {
   lat?: number
   lng?: number
@@ -147,7 +198,15 @@ export const createBooking = (data: {
   renter_notes?: string
 }) => api.post('/bookings', data).then(r => r.data)
 
-export const getBookings = (role: 'renter' | 'owner' = 'renter') =>
+export const getBookings = (role: 'renter' | 'owner' = 'renter'): Promise<BookingsResponse> =>
   api.get('/bookings', { params: { role } }).then(r => r.data)
+
+// Cambio stato prenotazione — PATCH /bookings/{id}/status.
+// Il proprietario usa questa per confermare o rifiutare una richiesta pending.
+// La rotta esiste già sul backend (BookingController@updateStatus); qui mancava
+// soltanto il wrapper frontend. Manda solo { status }; se più avanti il backend
+// accetta un motivo di rifiuto (cancellation_reason / owner_notes) lo aggiungiamo qui.
+export const updateBookingStatus = (id: number, status: BookingStatus): Promise<{ booking: Booking }> =>
+  api.patch(`/bookings/${id}/status`, { status }).then(r => r.data)
 
 export default api
