@@ -26,8 +26,9 @@ interface Props {
 }
 
 export default function ListingCard({ listing, index = 0 }: Props) {
-  const bgColor = CATEGORY_COLORS[listing.category?.slug] || '#F3F4F6'
-  const textColor = CATEGORY_TEXT[listing.category?.slug] || '#374151'
+const slug = listing.category?.slug ?? ''
+  const bgColor = CATEGORY_COLORS[slug] || '#F3F4F6'
+  const textColor = CATEGORY_TEXT[slug] || '#374151'
 
   return (
     <Link href={`/oggetto/${listing.id}`}>
@@ -78,10 +79,10 @@ export default function ListingCard({ listing, index = 0 }: Props) {
             {listing.owner?.is_verified && (
               <ShieldCheck size={12} style={{ color: 'var(--teal)' }} />
             )}
-            {listing.owner?.rating_avg > 0 && (
+            {listing.owner?.rating_avg != null && listing.owner.rating_avg > 0 && (
               <span className="text-xs ml-auto flex items-center gap-0.5" style={{ color: 'var(--muted)' }}>
                 <Star size={11} fill="currentColor" style={{ color: 'var(--mustard-dark)' }} />
-                {Number(listing.owner.rating_avg).toFixed(1)}
+                {Number(listing.owner?.rating_avg).toFixed(1)}
               </span>
             )}
           </div>
