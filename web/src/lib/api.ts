@@ -8,13 +8,28 @@ const api = axios.create({
   },
 })
 
+// ── Token helpers ─────────────────────────────────────────────────────────────
+// Centralizziamo qui la chiave di localStorage, così nessun altro file deve
+// conoscere la stringa "franco_token": passa tutto da queste funzioni.
+
+export const TOKEN_KEY = 'franco_token'
+
+export const getToken = (): string | null =>
+  typeof window !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null
+
+export const setToken = (token: string): void => {
+  if (typeof window !== 'undefined') localStorage.setItem(TOKEN_KEY, token)
+}
+
+export const clearToken = (): void => {
+  if (typeof window !== 'undefined') localStorage.removeItem(TOKEN_KEY)
+}
+
 // Interceptor — aggiunge il token Bearer se presente
 api.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('franco_token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
+  const token = getToken()
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
   }
   return config
 })
@@ -34,6 +49,25 @@ export interface Owner {
   avatar_url: string | null
   rating_avg: number | null
   is_verified: boolean
+}
+
+export interface User {
+  id: number
+  name: string
+  email: string
+  avatar_url: string | null
+  is_verified: boolean
+  rating_avg: number | null
+  city?: string | null
+}
+
+export interface AuthResponse {
+  user: User
+  token: string
+}
+
+export interface MeResponse {
+  user: User
 }
 
 export interface Listing {
@@ -94,14 +128,17 @@ export const getListing = (id: number): Promise<ListingDetailResponse> =>
 export const getCategories = () =>
   api.get('/categories').then(r => r.data)
 
-export const login = (email: string, password: string) =>
+export const login = (email: string, password: string): Promise<AuthResponse> =>
   api.post('/auth/login', { email, password }).then(r => r.data)
 
-export const register = (name: string, email: string, password: string) =>
+export const register = (name: string, email: string, password: string): Promise<AuthResponse> =>
   api.post('/auth/register', { name, email, password, password_confirmation: password }).then(r => r.data)
 
-export const getMe = () =>
+export const getMe = (): Promise<MeResponse> =>
   api.get('/auth/me').then(r => r.data)
+
+export const logout = (): Promise<{ message: string }> =>
+  api.post('/auth/logout').then(r => r.data)
 
 export const createBooking = (data: {
   listing_id: number

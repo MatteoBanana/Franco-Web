@@ -2,10 +2,29 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/lib/auth-context'
 import { Search, Home, PlusCircle, ArrowLeftRight, MessageCircle, User, LogOut, Menu, X } from 'lucide-react'
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
+
+  const { user, isAuthenticated, loading, logout } = useAuth()
+  const router = useRouter()
+
+  // Iniziali per l'avatar quando manca avatar_url (es. "Mario Rossi" → "MR").
+  const initials = (user?.name ?? '')
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map(w => w[0]?.toUpperCase() ?? '')
+    .join('') || '?'
+
+  async function handleLogout() {
+    await logout()
+    setMobileOpen(false)
+    router.push('/')
+  }
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
@@ -56,19 +75,58 @@ export default function Navbar() {
 
           {/* CTA desktop */}
           <div className="hidden md:flex items-center gap-3">
-            <Link
-              href="/pubblica"
-              className="px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
-              style={{ background: 'var(--mustard)', color: 'var(--ink)' }}
-            >
-              + Pubblica
-            </Link>
-            <button
-              className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white"
-              style={{ background: 'var(--teal)' }}
-            >
-              MR
-            </button>
+            {/* Durante il bootstrap riserviamo lo spazio per evitare il flicker
+                tra stato sloggato e loggato al primo paint. */}
+            {loading ? (
+              <div className="w-8 h-8" />
+            ) : isAuthenticated ? (
+              <>
+                <Link
+                  href="/pubblica"
+                  className="px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
+                  style={{ background: 'var(--mustard)', color: 'var(--ink)' }}
+                >
+                  + Pubblica
+                </Link>
+                <Link
+                  href="/profilo"
+                  title={user?.name}
+                  className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-sm font-bold text-white"
+                  style={{ background: 'var(--teal)' }}
+                >
+                  {user?.avatar_url ? (
+                    <img src={user.avatar_url} alt={user.name} className="w-full h-full object-cover" />
+                  ) : (
+                    initials
+                  )}
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="p-2 rounded-lg transition-colors"
+                  style={{ color: 'var(--muted)' }}
+                  title="Esci"
+                >
+                  <LogOut size={18} />
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                  style={{ color: 'var(--teal)' }}
+                >
+                  Accedi
+                </Link>
+                <Link
+                  href="/registrazione"
+                  className="px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
+                  style={{ background: 'var(--mustard)', color: 'var(--ink)' }}
+                >
+                  Registrati
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -102,6 +160,36 @@ export default function Navbar() {
                 {label}
               </Link>
             ))}
+            {!loading && (
+              isAuthenticated ? (
+                <button
+                  onClick={handleLogout}
+                  className="px-3 py-2.5 rounded-lg text-sm font-medium text-left"
+                  style={{ color: 'var(--terracotta)' }}
+                >
+                  Esci
+                </button>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="px-3 py-2.5 rounded-lg text-sm font-medium"
+                    style={{ color: 'var(--teal)' }}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    Accedi
+                  </Link>
+                  <Link
+                    href="/registrazione"
+                    className="px-3 py-2.5 rounded-lg text-sm font-semibold"
+                    style={{ color: 'var(--ink)' }}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    Registrati
+                  </Link>
+                </>
+              )
+            )}
           </div>
         </div>
       )}
