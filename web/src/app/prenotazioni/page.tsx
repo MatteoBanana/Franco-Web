@@ -1,9 +1,10 @@
 'use client'
 
-// Dashboard proprietario — richieste di prenotazione ricevute sui propri oggetti.
-// Pagina autenticata: guardia via useAuth, lista via getBookings('owner'), azioni
-// di conferma/rifiuto con update ottimistico (la UI cambia subito, e se l'API
-// fallisce torniamo indietro).
+// Prenotazioni — pagina unica a due tab:
+//  - "Ricevute" (owner):  richieste sui propri oggetti, con conferma/rifiuto.
+//  - "Inviate"  (renter): prenotazioni fatte dall'utente, sola lettura.
+// Pagina autenticata: guardia via useAuth. Ogni tab fa il suo fetch (owner/renter)
+// la prima volta che viene aperta, poi il risultato resta in cache per la sessione.
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -12,12 +13,19 @@ import { getBookings, updateBookingStatus, type Booking } from '@/lib/api'
 import Navbar from '@/components/Navbar'
 import RichiestaCard from './RichiestaCard'
 
+type Tab = 'owner' | 'renter'
+
 export default function PrenotazioniPage() {
   const { isAuthenticated, loading: authLoading } = useAuth()
   const router = useRouter()
 
-  const [bookings, setBookings] = useState<Booking[]>([])
-  const [loading, setLoading] = useState(true)
+  const [tab, setTab] = useState<Tab>('owner')
+
+  // Cache separata per ruolo: null = non ancora caricata.
+  const [datiOwner, setDatiOwner] = useState<Booking[] | null>(null)
+  const [datiRenter, setDatiRenter] = useState<Booking[] | null>(null)
+
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // Guardia: a bootstrap finito, se non loggato → login.
@@ -27,18 +35,27 @@ export default function PrenotazioniPage() {
     }
   }, [authLoading, isAuthenticated, router])
 
-  // Fetch richieste ricevute.
+  // Fetch della tab attiva, solo se non è già in cache.
   useEffect(() => {
     if (authLoading || !isAuthenticated) return
 
+    const giaInCache = tab === 'owner' ? datiOwner !== null : datiRenter !== null
+    if (giaInCache) return
+
     let attivo = true
     setLoading(true)
-    getBookings('owner')
+    setError(null)
+    getBookings(tab)
       .then(res => {
-        if (attivo) setBookings(res.data)
+        if (!attivo) return
+        if (tab === 'owner') {
+          setDatiOwner(res.data)
+        } else {
+                  setDatiRenter(res.data)
+        }
       })
       .catch(() => {
-        if (attivo) setError('Non è stato possibile caricare le richieste. Riprova.')
+        if (attivo) setError('Non è stato possibile caricare le prenotazioni. Riprova.')
       })
       .finally(() => {
         if (attivo) setLoading(false)
@@ -47,21 +64,22 @@ export default function PrenotazioniPage() {
     return () => {
       attivo = false
     }
-  }, [authLoading, isAuthenticated])
+  }, [tab, authLoading, isAuthenticated, datiOwner, datiRenter])
 
-  // Conferma/rifiuto con update ottimistico: cambiamo subito lo stato in lista,
-  // e se l'API fallisce ripristiniamo la versione precedente mostrando l'errore.
+  // Conferma/rifiuto (solo owner) con update ottimistico e rollback su errore.
   async function handleUpdate(id: number, status: 'confirmed' | 'rejected') {
-    const precedente = bookings
-    setBookings(bs => bs.map(b => (b.id === id ? { ...b, status } : b)))
+    const precedente = datiOwner
+    setDatiOwner(bs => (bs ? bs.map(b => (b.id === id ? { ...b, status } : b)) : bs))
 
     try {
       await updateBookingStatus(id, status)
     } catch {
-      setBookings(precedente) // rollback
+      setDatiOwner(precedente) // rollback
       setError('Aggiornamento non riuscito. Riprova.')
     }
   }
+
+  const dati = tab === 'owner' ? datiOwner : datiRenter
 
   if (authLoading || !isAuthenticated) {
     return (
@@ -78,14 +96,32 @@ export default function PrenotazioniPage() {
     <>
       <Navbar />
       <main className="max-w-3xl mx-auto px-4 py-10">
-        <header className="mb-8">
+        <header className="mb-6">
           <h1 className="font-display font-bold text-3xl tracking-tight" style={{ color: 'var(--ink)' }}>
-            Richieste ricevute
+            Prenotazioni
           </h1>
-          <p className="mt-2 text-sm" style={{ color: 'var(--muted)' }}>
-            Le prenotazioni che altri hanno richiesto sui tuoi oggetti. Confermale o rifiutale.
-          </p>
         </header>
+
+        {/* Tab */}
+        <div className="flex gap-1 mb-8 p-1 rounded-xl w-fit" style={{ background: '#F0EFEA' }}>
+          {([
+            { key: 'owner' as Tab,  label: 'Ricevute' },
+            { key: 'renter' as Tab, label: 'Inviate' },
+          ]).map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className="px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+              style={
+                tab === key
+                  ? { background: 'white', color: 'var(--ink)' }
+                  : { background: 'transparent', color: 'var(--muted)' }
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
         {loading && (
           <div className="space-y-4">
@@ -101,19 +137,28 @@ export default function PrenotazioniPage() {
           </div>
         )}
 
-        {!loading && !error && bookings.length === 0 && (
+        {!loading && !error && dati && dati.length === 0 && (
           <div className="rounded-2xl px-6 py-12 text-center" style={{ background: 'white', border: '1px solid #F0EFEA' }}>
-            <p className="font-display text-xl" style={{ color: 'var(--ink)' }}>Ancora nessuna richiesta</p>
+            <p className="font-display text-xl" style={{ color: 'var(--ink)' }}>
+              {tab === 'owner' ? 'Ancora nessuna richiesta' : 'Non hai ancora prenotato nulla'}
+            </p>
             <p className="mt-2 text-sm" style={{ color: 'var(--muted)' }}>
-              Quando qualcuno prenoterà un tuo oggetto, lo troverai qui.
+              {tab === 'owner'
+                ? 'Quando qualcuno prenoterà un tuo oggetto, lo troverai qui.'
+                : 'Le prenotazioni che fai sugli oggetti degli altri compaiono qui.'}
             </p>
           </div>
         )}
 
-        {!loading && !error && bookings.length > 0 && (
+        {!loading && !error && dati && dati.length > 0 && (
           <ul className="space-y-4">
-            {bookings.map(b => (
-              <RichiestaCard key={b.id} booking={b} onUpdate={handleUpdate} />
+            {dati.map(b => (
+              <RichiestaCard
+                key={b.id}
+                booking={b}
+                variant={tab}
+                onUpdate={tab === 'owner' ? handleUpdate : undefined}
+              />
             ))}
           </ul>
         )}

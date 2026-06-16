@@ -1,33 +1,29 @@
 'use client'
 
-// Card di una singola richiesta di prenotazione, lato proprietario.
-// Mostra chi richiede, su quale oggetto, le date, il breakdown del prezzo e —
-// solo per le richieste in stato 'pending' — i pulsanti per confermare o rifiutare.
-// La conferma è diretta; il rifiuto chiede un secondo click di sicurezza, così il
-// proprietario non brucia una richiesta per sbaglio (scelta concordata, opzione B).
+// Card di una singola prenotazione. Due varianti:
+//  - 'owner'  → richieste RICEVUTE: mostra chi richiede (renter) e, sulle pending,
+//               i pulsanti conferma/rifiuta.
+//  - 'renter' → prenotazioni INVIATE: mostra il proprietario (owner) dell'oggetto,
+//               sola lettura, nessuna azione.
 
 import { useState } from 'react'
 import type { Booking } from '@/lib/api'
 
 interface Props {
   booking: Booking
-  // Eseguita dal genitore: applica l'update ottimistico e chiama l'API.
-  onUpdate: (id: number, status: 'confirmed' | 'rejected') => Promise<void>
+  variant: 'owner' | 'renter'
+  onUpdate?: (id: number, status: 'confirmed' | 'rejected') => Promise<void>
 }
 
-// Formattatore euro italiano riusato per ogni importo della card.
-const euro = (v: string | number) =>
+const euro = (v: number) =>
   '€ ' + Number(v).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-// Date in formato leggibile italiano (es. "1 lug 2026").
 const dataIt = (iso: string) =>
   new Date(iso).toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })
 
-// Iniziali per l'avatar quando manca avatar_url, stesso criterio della Navbar.
 const iniziali = (nome: string) =>
   (nome ?? '').trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('') || '?'
 
-// Etichetta e colore per ogni stato, così il badge è coerente in tutta la lista.
 const STATO: Record<Booking['status'], { label: string; bg: string; fg: string }> = {
   pending:   { label: 'In attesa',  bg: '#FBF3D5', fg: '#8A6D00' },
   confirmed: { label: 'Confermata', bg: '#DCEFEA', fg: 'var(--teal)' },
@@ -37,16 +33,23 @@ const STATO: Record<Booking['status'], { label: string; bg: string; fg: string }
   rejected:  { label: 'Rifiutata',  bg: '#FDEDE7', fg: 'var(--terracotta)' },
 }
 
-export default function RichiestaCard({ booking, onUpdate }: Props) {
-  // 'busy' blocca i pulsanti durante la chiamata; 'confermaRifiuto' apre lo step
-  // di sicurezza prima del rifiuto vero.
+export default function RichiestaCard({ booking, variant, onUpdate }: Props) {
   const [busy, setBusy] = useState(false)
   const [confermaRifiuto, setConfermaRifiuto] = useState(false)
 
   const stato = STATO[booking.status]
-  const isPending = booking.status === 'pending'
+  const isOwner = variant === 'owner'
+  const mostraAzioni = isOwner && booking.status === 'pending'
+
+  // Persona da mostrare: il richiedente in owner, il proprietario in renter.
+  const persona = isOwner ? booking.renter : booking.owner
+  const sottotitolo = isOwner ? `su ${booking.listing?.title ?? 'un tuo oggetto'}` : 'La tua richiesta'
+
+  // Il backend non manda price_per_day: lo ricaviamo dal subtotale diviso i giorni.
+  const prezzoGiorno = booking.days > 0 ? booking.subtotal / booking.days : 0
 
   async function agisci(status: 'confirmed' | 'rejected') {
+    if (!onUpdate) return
     setBusy(true)
     try {
       await onUpdate(booking.id, status)
@@ -57,29 +60,26 @@ export default function RichiestaCard({ booking, onUpdate }: Props) {
   }
 
   return (
-    <li
-      className="rounded-2xl p-5"
-      style={{ background: 'white', border: '1px solid #F0EFEA' }}
-    >
-      {/* Riga alta: richiedente + badge stato */}
+    <li className="rounded-2xl p-5" style={{ background: 'white', border: '1px solid #F0EFEA' }}>
+      {/* Riga alta: persona + badge stato */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <div
             className="w-11 h-11 rounded-full overflow-hidden flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
             style={{ background: 'var(--teal)' }}
           >
-            {booking.renter?.avatar_url ? (
-              <img src={booking.renter.avatar_url} alt={booking.renter.name} className="w-full h-full object-cover" />
+            {persona?.avatar_url ? (
+              <img src={persona.avatar_url} alt={persona.name} className="w-full h-full object-cover" />
             ) : (
-              iniziali(booking.renter?.name ?? '')
+              iniziali(persona?.name ?? '')
             )}
           </div>
           <div>
             <p className="font-medium leading-tight" style={{ color: 'var(--ink)' }}>
-              {booking.renter?.name ?? 'Richiedente'}
+              {isOwner ? (persona?.name ?? 'Richiedente') : (booking.listing?.title ?? 'Oggetto')}
             </p>
             <p className="text-sm" style={{ color: 'var(--muted)' }}>
-              su {booking.listing?.title ?? 'un tuo oggetto'}
+              {isOwner ? sottotitolo : `da ${persona?.name ?? 'proprietario'}`}
             </p>
           </div>
         </div>
@@ -97,7 +97,7 @@ export default function RichiestaCard({ booking, onUpdate }: Props) {
         <span style={{ color: 'var(--muted)' }}> · {booking.days} {booking.days === 1 ? 'giorno' : 'giorni'}</span>
       </p>
 
-      {/* Eventuale nota del richiedente */}
+      {/* Nota */}
       {booking.renter_notes && (
         <p className="mt-2 text-sm italic" style={{ color: 'var(--muted)' }}>
           “{booking.renter_notes}”
@@ -107,7 +107,7 @@ export default function RichiestaCard({ booking, onUpdate }: Props) {
       {/* Breakdown prezzo */}
       <div className="mt-4 pt-4 space-y-1.5 text-sm" style={{ borderTop: '1px solid #F0EFEA' }}>
         <div className="flex justify-between" style={{ color: 'var(--muted)' }}>
-          <span>{euro(booking.price_per_day)} × {booking.days} {booking.days === 1 ? 'giorno' : 'giorni'}</span>
+          <span>{euro(prezzoGiorno)} × {booking.days} {booking.days === 1 ? 'giorno' : 'giorni'}</span>
           <span>{euro(booking.subtotal)}</span>
         </div>
         {Number(booking.deposit) > 0 && (
@@ -122,8 +122,8 @@ export default function RichiestaCard({ booking, onUpdate }: Props) {
         </div>
       </div>
 
-      {/* Azioni — solo per le richieste in attesa */}
-      {isPending && (
+      {/* Azioni — solo owner, solo pending */}
+      {mostraAzioni && (
         <div className="mt-5">
           {!confermaRifiuto ? (
             <div className="flex gap-3">
@@ -145,10 +145,7 @@ export default function RichiestaCard({ booking, onUpdate }: Props) {
               </button>
             </div>
           ) : (
-            <div
-              className="rounded-xl p-3"
-              style={{ background: '#FDEDE7' }}
-            >
+            <div className="rounded-xl p-3" style={{ background: '#FDEDE7' }}>
               <p className="text-sm mb-3" style={{ color: 'var(--terracotta)' }}>
                 Rifiutare questa richiesta? L’azione non si annulla.
               </p>
