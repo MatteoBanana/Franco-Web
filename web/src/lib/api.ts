@@ -114,21 +114,22 @@ export type BookingStatus =
   | 'cancelled'
   | 'rejected'
 
-// Forma DEDOTTA dal pattern di listingResource (category/owner annidati) e dalla
-// migration bookings. Da verificare contro il JSON reale appena esiste una
-// prenotazione di prova nel DB: in particolare la presenza degli oggetti annidati
-// listing e renter, e i nomi esatti dei campi.
-// I campi monetari arrivano come string (decimal serializzato da Laravel): Number() in UI.
+// Forma CONFERMATA sul JSON reale di GET /bookings (BookingController).
+// Note importanti emerse dal dato vero, diverse dalla prima ipotesi:
+//  - i campi monetari arrivano come NUMBER, non come string;
+//  - non esiste price_per_day sul booking (se serve, si ricava da subtotal / days);
+//  - listing porta city (non cover_image), e il booking include sia renter sia owner.
 export interface BookingListingRef {
   id: number
   title: string
-  cover_image: string | null
+  city?: string
+  cover_image?: string | null
 }
 
-export interface BookingRenterRef {
+export interface BookingPersonRef {
   id: number
   name: string
-  avatar_url: string | null
+  avatar_url?: string | null
 }
 
 export interface Booking {
@@ -137,20 +138,21 @@ export interface Booking {
   date_from: string
   date_to: string
   days: number
-  price_per_day: string
-  subtotal: string
-  deposit: string
-  total: string
-  renter_notes: string | null
-  owner_notes: string | null
+  subtotal: number
+  deposit: number
+  total: number
+  confirmed_at?: string | null
+  renter_notes?: string | null
+  owner_notes?: string | null
   created_at?: string
   listing: BookingListingRef
-  renter: BookingRenterRef
+  renter: BookingPersonRef
+  owner: BookingPersonRef
 }
 
 export interface BookingsResponse {
   data: Booking[]
-  meta: {
+  meta?: {
     total: number
   }
 }
