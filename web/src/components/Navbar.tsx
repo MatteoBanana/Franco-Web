@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
-import { Search, Home, PlusCircle, ArrowLeftRight, MessageCircle, User, LogOut, Menu, X } from 'lucide-react'
+import { Search, Home, PlusCircle, ArrowLeftRight, MessageCircle, User, LogOut, Menu, X, Inbox } from 'lucide-react'
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -46,12 +46,13 @@ export default function Navbar() {
           {/* Nav desktop */}
           <nav className="hidden md:flex items-center gap-1">
             {[
-              { href: '/',          icon: Home,            label: 'Home' },
-              { href: '/cerca',     icon: Search,          label: 'Cerca' },
-              { href: '/pubblica',  icon: PlusCircle,      label: 'Pubblica' },
-              { href: '/scambi',    icon: ArrowLeftRight,  label: 'Scambi' },
-              { href: '/messaggi',  icon: MessageCircle,   label: 'Messaggi' },
-              { href: '/profilo',   icon: User,            label: 'Profilo' },
+              { href: '/',             icon: Home,            label: 'Home' },
+              { href: '/cerca',        icon: Search,          label: 'Cerca' },
+              { href: '/pubblica',     icon: PlusCircle,      label: 'Pubblica' },
+              { href: '/scambi',       icon: ArrowLeftRight,  label: 'Scambi' },
+              { href: '/prenotazioni', icon: Inbox,           label: 'Richieste' },
+              { href: '/messaggi',     icon: MessageCircle,   label: 'Messaggi' },
+              { href: '/profilo',      icon: User,            label: 'Profilo' },
             ].map(({ href, icon: Icon, label }) => (
               <Link
                 key={href}
@@ -144,11 +145,12 @@ export default function Navbar() {
         <div className="md:hidden border-t border-gray-100 bg-white animate-fade-in">
           <div className="px-4 py-3 flex flex-col gap-1">
             {[
-              { href: '/',         label: 'Home' },
-              { href: '/cerca',    label: 'Cerca' },
-              { href: '/pubblica', label: 'Pubblica' },
-              { href: '/messaggi', label: 'Messaggi' },
-              { href: '/profilo',  label: 'Profilo' },
+              { href: '/',             label: 'Home' },
+              { href: '/cerca',        label: 'Cerca' },
+              { href: '/pubblica',     label: 'Pubblica' },
+              { href: '/prenotazioni', label: 'Richieste' },
+              { href: '/messaggi',     label: 'Messaggi' },
+              { href: '/profilo',      label: 'Profilo' },
             ].map(({ href, label }) => (
               <Link
                 key={href}
