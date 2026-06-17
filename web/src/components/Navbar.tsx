@@ -47,7 +47,7 @@ export default function Navbar() {
           <nav className="hidden md:flex items-center gap-1">
             {[
               { href: '/',             icon: Home,            label: 'Home' },
-              { href: '/cerca',        icon: Search,          label: 'Cerca' },
+              { href: '/#cerca',        icon: Search,          label: 'Cerca' },
               { href: '/pubblica',     icon: PlusCircle,      label: 'Pubblica' },
               { href: '/scambi',       icon: ArrowLeftRight,  label: 'Scambi' },
               { href: '/prenotazioni', icon: Inbox,           label: 'Richieste' },
@@ -146,7 +146,7 @@ export default function Navbar() {
           <div className="px-4 py-3 flex flex-col gap-1">
             {[
               { href: '/',             label: 'Home' },
-              { href: '/cerca',        label: 'Cerca' },
+              { href: '/#cerca',        label: 'Cerca' },
               { href: '/pubblica',     label: 'Pubblica' },
               { href: '/prenotazioni', label: 'Richieste' },
               { href: '/messaggi',     label: 'Messaggi' },
