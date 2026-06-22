@@ -1,21 +1,19 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Globe, Monitor, Wrench, Bike, Home, Flower2, BookOpen, Music, Gamepad2, Shirt, Car, Smile } from 'lucide-react'
+import { Globe, Monitor, Wrench, Bike, Home, Car, Smile } from 'lucide-react'
 
+// Categorie allineate a quelle realmente presenti nel database (GET /categories):
+// Casa, Elettronica, Sport, Tempo libero, Trasporto, Utensili. Gli slug devono
+// combaciare con quelli del backend, altrimenti il filtro non trova nulla.
 const CATEGORIES = [
-  { slug: 'tutti',         label: 'Tutti',         icon: Globe },
-  { slug: 'elettronica',   label: 'Elettronica',   icon: Monitor },
-  { slug: 'utensili',      label: 'Utensili',      icon: Wrench },
-  { slug: 'sport',         label: 'Sport',         icon: Bike },
-  { slug: 'casa',          label: 'Casa',          icon: Home },
-  { slug: 'giardino',      label: 'Giardino',      icon: Flower2 },
-  { slug: 'libri',         label: 'Libri',         icon: BookOpen },
-  { slug: 'musica',        label: 'Musica',        icon: Music },
-  { slug: 'giochi',        label: 'Giochi',        icon: Gamepad2 },
-  { slug: 'abbigliamento', label: 'Abbigliamento', icon: Shirt },
-  { slug: 'trasporto',     label: 'Trasporto',     icon: Car },
-  { slug: 'tempo-libero',  label: 'Tempo libero',  icon: Smile },
+  { slug: 'tutti',        label: 'Tutti',        icon: Globe },
+  { slug: 'casa',         label: 'Casa',         icon: Home },
+  { slug: 'elettronica',  label: 'Elettronica',  icon: Monitor },
+  { slug: 'sport',        label: 'Sport',        icon: Bike },
+  { slug: 'tempo-libero', label: 'Tempo libero', icon: Smile },
+  { slug: 'trasporto',    label: 'Trasporto',    icon: Car },
+  { slug: 'utensili',     label: 'Utensili',     icon: Wrench },
 ]
 
 interface Props {
