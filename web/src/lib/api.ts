@@ -43,6 +43,10 @@ export interface Category {
   icon: string
 }
 
+export interface CategoriesResponse {
+  data: Category[]
+}
+
 export interface Owner {
   id: number
   name: string
@@ -178,7 +182,7 @@ export const getListings = (params: ListingParams = {}): Promise<ListingsRespons
 export const getListing = (id: number): Promise<ListingDetailResponse> =>
   api.get(`/listings/${id}`).then(r => r.data)
 
-export const getCategories = () =>
+export const getCategories = (): Promise<CategoriesResponse> =>
   api.get('/categories').then(r => r.data)
 
 export const login = (email: string, password: string): Promise<AuthResponse> =>
@@ -204,11 +208,41 @@ export const getBookings = (role: 'renter' | 'owner' = 'renter'): Promise<Bookin
   api.get('/bookings', { params: { role } }).then(r => r.data)
 
 // Cambio stato prenotazione — PATCH /bookings/{id}/status.
-// Il proprietario usa questa per confermare o rifiutare una richiesta pending.
-// La rotta esiste già sul backend (BookingController@updateStatus); qui mancava
-// soltanto il wrapper frontend. Manda solo { status }; se più avanti il backend
-// accetta un motivo di rifiuto (cancellation_reason / owner_notes) lo aggiungiamo qui.
 export const updateBookingStatus = (id: number, status: BookingStatus): Promise<{ booking: Booking }> =>
   api.patch(`/bookings/${id}/status`, { status }).then(r => r.data)
+
+// Crea un nuovo annuncio — POST /listings. L'oggetto nasce 'draft' lato backend.
+export const createListing = (data: {
+  category_id: number
+  title: string
+  description: string
+  price_per_day: number
+  deposit?: number
+  condition: 'new' | 'excellent' | 'good' | 'fair'
+  lat: number
+  lng: number
+  address: string
+  city: string
+}): Promise<{ listing: Listing }> =>
+  api.post('/listings', data).then(r => r.data)
+
+// Modifica un annuncio esistente — PATCH /listings/{id}. Usata anche per
+// l'attivazione (status: 'active') subito dopo la pubblicazione.
+export const updateListing = (
+  id: number,
+  data: Partial<{
+    title: string
+    description: string
+    price_per_day: number
+    deposit: number
+    condition: 'new' | 'excellent' | 'good' | 'fair'
+    lat: number
+    lng: number
+    address: string
+    city: string
+    status: 'draft' | 'active' | 'paused'
+  }>
+): Promise<{ listing: Listing }> =>
+  api.patch(`/listings/${id}`, data).then(r => r.data)
 
 export default api
