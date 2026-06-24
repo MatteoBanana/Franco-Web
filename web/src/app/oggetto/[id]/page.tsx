@@ -11,6 +11,7 @@ import GalleriaImmagini from './GalleriaImmagini'
 import MappaPosizione from './MappaPosizione'
 import CalendarioDisponibilita from './CalendarioDisponibilita'
 import FormPrenotazione from './FormPrenotazione'
+import BottoneModifica from './BottoneModifica'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://matteor80.sg-host.com/api'
 
@@ -102,6 +103,11 @@ export default async function OggettoDetailPage({
                   </>
                 )}
               </div>
+              {listing.owner && (
+                <div className="mt-4">
+                  <BottoneModifica listingId={listing.id} ownerId={listing.owner.id} />
+                </div>
+              )}
             </header>
 
             {listing.description && (
