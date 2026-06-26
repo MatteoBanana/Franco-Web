@@ -63,6 +63,7 @@ export interface User {
   is_verified: boolean
   rating_avg: number | null
   city?: string | null
+  bio?: string | null
 }
 
 export interface AuthResponse {
@@ -193,6 +194,11 @@ export const register = (name: string, email: string, password: string): Promise
 
 export const getMe = (): Promise<MeResponse> =>
   api.get('/auth/me').then(r => r.data)
+
+export const updateProfile = (
+  data: Partial<{ name: string; city: string | null; bio: string | null }>
+): Promise<MeResponse> =>
+  api.patch('/auth/me', data).then(r => r.data)
 
 export const logout = (): Promise<{ message: string }> =>
   api.post('/auth/logout').then(r => r.data)
