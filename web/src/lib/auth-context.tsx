@@ -27,6 +27,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>
   register: (name: string, email: string, password: string) => Promise<void>
   logout: () => Promise<void>
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
@@ -78,9 +79,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }, [])
 
+  // Ricarica i dati dell'utente dal server (es. dopo una modifica al profilo),
+  // così lo stato in memoria — e tutto ciò che ne dipende, come la Navbar —
+  // riflette subito i nuovi valori senza bisogno di ricaricare la pagina.
+  const refreshUser = useCallback(async () => {
+    try {
+      const { user } = await getMe()
+      setUser(user)
+    } catch {
+      // se fallisce, lasciamo lo stato com'è
+    }
+  }, [])
+
   return (
     <AuthContext.Provider
-      value={{ user, loading, isAuthenticated: !!user, login, register, logout }}
+      value={{ user, loading, isAuthenticated: !!user, login, register, logout, refreshUser }}
     >
       {children}
     </AuthContext.Provider>

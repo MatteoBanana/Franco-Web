@@ -1,16 +1,16 @@
 'use client'
 
-// Profilo utente — sola lettura. Mostra i dati dell'utente loggato presi dal
-// contesto auth (useAuth), senza chiamate extra: gli stessi dati che la Navbar
-// già usa. Niente modifica per ora: il backend non espone un endpoint di update
-// profilo. Pagina autenticata con guardia: non loggato → /login.
+// Profilo utente — sola lettura, con accesso alla modifica. Mostra i dati
+// dell'utente loggato presi dal contesto auth (useAuth). Il bottone "Modifica
+// profilo" porta a /profilo/modifica (PATCH /auth/me). Pagina autenticata con
+// guardia: non loggato → /login.
 
 import { useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import Navbar from '@/components/Navbar'
-import { Inbox, MapPin, Mail, BadgeCheck, Star } from 'lucide-react'
+import { Inbox, MapPin, Mail, BadgeCheck, Star, Pencil } from 'lucide-react'
 
 const iniziali = (nome: string) =>
   (nome ?? '').trim().split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('') || '?'
@@ -45,9 +45,19 @@ export default function ProfiloPage() {
     <>
       <Navbar />
       <main className="max-w-3xl mx-auto px-4 py-10">
-        <h1 className="font-display font-bold text-3xl tracking-tight mb-8" style={{ color: 'var(--ink)' }}>
-          Profilo
-        </h1>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="font-display font-bold text-3xl tracking-tight" style={{ color: 'var(--ink)' }}>
+            Profilo
+          </h1>
+          <Link
+            href="/profilo/modifica"
+            className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors"
+            style={{ background: 'var(--teal-light)', color: 'var(--teal)' }}
+          >
+            <Pencil size={15} />
+            Modifica profilo
+          </Link>
+        </div>
 
         {/* Card identità */}
         <section
@@ -82,6 +92,13 @@ export default function ProfiloPage() {
               )}
             </div>
           </div>
+
+          {/* Bio */}
+          {user.bio && (
+            <p className="mt-5 text-sm leading-relaxed whitespace-pre-line" style={{ color: 'var(--ink)' }}>
+              {user.bio}
+            </p>
+          )}
 
           {/* Dettagli */}
           <div className="mt-6 pt-6 space-y-3 text-sm" style={{ borderTop: '1px solid #F0EFEA' }}>
